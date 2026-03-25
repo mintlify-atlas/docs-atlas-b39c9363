@@ -1,80 +1,170 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Build your first animation with react-native-ease in under five minutes."
 ---
 
-## Get started in three steps
+This guide walks you from zero to a working animation as fast as possible.
 
-Get your documentation site running locally and make your first customization.
+<Steps>
+  <Step title="Install react-native-ease">
+    ```bash
+    npm install react-native-ease
+    ```
 
-### Step 1: Set up your local environment
+    Requires React Native 0.76+ with the new architecture enabled. See [Installation](/installation) for full setup details.
+  </Step>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Import EaseView">
+    Replace your `View` import with `EaseView`:
 
-### Step 2: Deploy your changes
+    ```tsx
+    import { EaseView } from 'react-native-ease';
+    ```
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    `EaseView` accepts all standard `ViewProps` — children, style, event handlers. You can use it anywhere you'd use a `View`.
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Add an animate prop">
+    Pass target values to the `animate` prop. When those values change, the view animates to them:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```tsx
+    import { useState } from 'react';
+    import { Button } from 'react-native';
+    import { EaseView } from 'react-native-ease';
 
-### Step 3: Go live
+    export function FadeExample() {
+      const [visible, setVisible] = useState(true);
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+      return (
+        <>
+          <EaseView
+            animate={{ opacity: visible ? 1 : 0 }}
+            style={{ width: 200, height: 200, backgroundColor: '#3B82F6' }}
+          />
+          <Button title="Toggle" onPress={() => setVisible(v => !v)} />
+        </>
+      );
+    }
+    ```
 
-## Next steps
+    Press the button — the view fades in and out. Without a `transition` prop, Ease defaults to `timing` with a 300ms `easeInOut` curve.
+  </Step>
 
-Now that you have your docs running, explore these key features:
+  <Step title="Configure the transition">
+    Use the `transition` prop to control how the animation plays:
 
-<CardGroup cols={2}>
+    ```tsx
+    <EaseView
+      animate={{ opacity: visible ? 1 : 0 }}
+      transition={{ type: 'timing', duration: 300, easing: 'easeOut' }}
+      style={{ width: 200, height: 200, backgroundColor: '#3B82F6' }}
+    />
+    ```
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+    The `easing` field accepts a preset name (`'linear'`, `'easeIn'`, `'easeOut'`, `'easeInOut'`) or a `[x1, y1, x2, y2]` cubic bezier tuple:
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+    ```tsx
+    // Material Design standard easing
+    transition={{ type: 'timing', duration: 300, easing: [0.4, 0, 0.2, 1] }}
+    ```
+  </Step>
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+  <Step title="Try a spring animation">
+    Swap `type: 'timing'` for `type: 'spring'` for physics-based motion. Springs are great for interactive elements because they feel natural and are interruptible:
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+    ```tsx
+    <EaseView
+      animate={{ translateX: isOpen ? 200 : 0 }}
+      transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+      style={{ width: 80, height: 80, backgroundColor: '#3B82F6', borderRadius: 8 }}
+    />
+    ```
 
-</CardGroup>
+    Rapidly toggling `isOpen` is fine — each change smoothly redirects the animation from its current position.
+  </Step>
+</Steps>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## More examples
+
+### Fade and slide on mount
+
+Use `initialAnimate` to set starting values. On mount, the view starts at those values and animates to `animate`:
+
+```tsx
+<EaseView
+  initialAnimate={{ opacity: 0, translateY: 20 }}
+  animate={{ opacity: 1, translateY: 0 }}
+  transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+  style={styles.card}
+>
+  <Text>Slides up and fades in on mount</Text>
+</EaseView>
+```
+
+### Scale on press
+
+```tsx
+import { useState } from 'react';
+import { Pressable } from 'react-native';
+import { EaseView } from 'react-native-ease';
+
+export function ScaleButton({ children }) {
+  const [pressed, setPressed] = useState(false);
+
+  return (
+    <Pressable
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+    >
+      <EaseView
+        animate={{ scale: pressed ? 0.95 : 1 }}
+        transition={{ type: 'spring', damping: 20, stiffness: 300, mass: 1 }}
+        style={styles.button}
+      >
+        {children}
+      </EaseView>
+    </Pressable>
+  );
+}
+```
+
+### Staggered list entrance
+
+Use `delay` to stagger animations across multiple elements:
+
+```tsx
+{items.map((item, i) => (
+  <EaseView
+    key={item.id}
+    initialAnimate={{ opacity: 0, translateY: 20 }}
+    animate={{ opacity: 1, translateY: 0 }}
+    transition={{ type: 'timing', duration: 300, delay: i * 100 }}
+  >
+    <Text>{item.label}</Text>
+  </EaseView>
+))}
+```
+
+### Animated background color
+
+```tsx
+<EaseView
+  animate={{ backgroundColor: isActive ? '#3B82F6' : '#E5E7EB' }}
+  transition={{ type: 'timing', duration: 300 }}
+  style={styles.card}
+>
+  <Text>Tap to change color</Text>
+</EaseView>
+```
+
+## Key props at a glance
+
+| Prop | What it does |
+|---|---|
+| `animate` | Target values for animated properties. Changes trigger animations. |
+| `initialAnimate` | Starting values on mount. Animates to `animate` on first render. |
+| `transition` | Animation config: `{ type: 'timing' }` or `{ type: 'spring' }`. Defaults to timing 300ms. |
+| `onTransitionEnd` | Callback fired when all animations complete with `{ finished: boolean }`. |
+| `transformOrigin` | Pivot point for scale/rotation as 0–1 fractions. Default: `{ x: 0.5, y: 0.5 }`. |
+
+For the full prop list and all animatable properties, see the [API Reference](/api/ease-view).

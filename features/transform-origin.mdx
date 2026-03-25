@@ -1,0 +1,66 @@
+---
+title: "Transform Origin"
+description: "Control the pivot point for scale and rotation animations using 0–1 fractions."
+---
+
+By default, scale and rotation animations pivot from the **center** of the view. The `transformOrigin` prop changes this pivot point using 0–1 fractions of the view's dimensions.
+
+## The transformOrigin Prop
+
+```tsx
+transformOrigin?: { x?: number; y?: number }
+```
+
+- `x`: Horizontal origin. `0` = left edge, `0.5` = center, `1` = right edge. Default: `0.5`
+- `y`: Vertical origin. `0` = top edge, `0.5` = center, `1` = bottom edge. Default: `0.5`
+
+## Common Values
+
+| Value | Position |
+| --- | --- |
+| `{ x: 0, y: 0 }` | Top-left |
+| `{ x: 0.5, y: 0.5 }` | Center (default) |
+| `{ x: 1, y: 1 }` | Bottom-right |
+| `{ x: 0.5, y: 0 }` | Top-center |
+| `{ x: 0, y: 0.5 }` | Left-center |
+
+## Examples
+
+### Rotate from top-left corner
+
+Useful for fold-out panels, accordion arrows, and hinged elements.
+
+```tsx
+<EaseView
+  animate={{ rotate: isOpen ? 45 : 0 }}
+  transformOrigin={{ x: 0, y: 0 }}
+  transition={{ type: 'spring', damping: 12, stiffness: 200, mass: 1 }}
+  style={styles.card}
+/>
+```
+
+### Scale from bottom-right
+
+```tsx
+<EaseView
+  animate={{ scale: active ? 1.2 : 1 }}
+  transformOrigin={{ x: 1, y: 1 }}
+  transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+  style={styles.card}
+/>
+```
+
+## Platform Implementation
+
+<Tabs>
+  <Tab title="iOS">
+    Sets `anchorPoint` on the view's `CALayer`. Because changing `anchorPoint` shifts the layer's visual position, the `updateLayoutMetrics:oldLayoutMetrics:` override compensates by adjusting the layer's `position` to keep the view visually in place.
+  </Tab>
+  <Tab title="Android">
+    Sets `pivotX` and `pivotY` on the Android `View`, computed from the 0–1 fractions multiplied by the view's measured width and height.
+  </Tab>
+</Tabs>
+
+<Tip>
+  `transformOrigin` is especially useful for rotating panels, drawers, and accordion arrows from their edge — set `x: 0, y: 0.5` to rotate from the left edge, or `x: 0, y: 0` to hinge from the top-left corner.
+</Tip>

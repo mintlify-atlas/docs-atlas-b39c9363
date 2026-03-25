@@ -1,0 +1,250 @@
+---
+title: 'Transition'
+description: 'Animation configuration types for the transition prop'
+---
+
+The `transition` prop on `EaseView` controls how animated property changes are played. It accepts either a single transition config applied to all properties, or a per-property map for fine-grained control.
+
+```tsx
+type Transition = SingleTransition | TransitionMap;
+type SingleTransition = TimingTransition | SpringTransition | NoneTransition;
+```
+
+When `transition` is omitted, the default is a timing animation of 300ms with `easeInOut` easing.
+
+## TimingTransition
+
+Animates from one value to another over a fixed duration using an easing curve.
+
+```tsx
+<EaseView
+  animate={{ opacity: isVisible ? 1 : 0 }}
+  transition={{ type: 'timing', duration: 300, easing: 'easeOut' }}
+/>
+```
+
+<ParamField path="type" type="'timing'" required>
+  Must be `'timing'` to use a timing transition.
+</ParamField>
+
+<ParamField path="duration" type="number" default="300">
+  Duration of the animation in milliseconds.
+</ParamField>
+
+<ParamField path="easing" type="EasingType" default="'easeInOut'">
+  Easing curve for the animation. Accepts a preset name or a `[x1, y1, x2, y2]` cubic bezier tuple.
+
+  Available presets:
+
+  | Preset         | Description                         | Bezier                   |
+  | -------------- | ----------------------------------- | ------------------------ |
+  | `'linear'`     | Constant speed                      | `[0, 0, 1, 1]`           |
+  | `'easeIn'`     | Starts slow, accelerates            | `[0.42, 0, 1, 1]`        |
+  | `'easeOut'`    | Starts fast, decelerates            | `[0, 0, 0.58, 1]`        |
+  | `'easeInOut'`  | Slow start and end, fast middle     | `[0.42, 0, 0.58, 1]`     |
+
+  For custom curves, pass a `[x1, y1, x2, y2]` tuple matching the CSS `cubic-bezier()` function. `x` values must be between `0` and `1`; `y` values can exceed this range for overshoot effects.
+
+  ```tsx
+  // Material Design standard easing
+  transition={{ type: 'timing', easing: [0.4, 0, 0.2, 1] }}
+
+  // Overshoot (bouncy feel)
+  transition={{ type: 'timing', easing: [0.68, -0.55, 0.265, 1.55] }}
+  ```
+</ParamField>
+
+<ParamField path="delay" type="number" default="0">
+  Delay in milliseconds before the animation starts. Useful for staggering animations across multiple elements.
+
+  ```tsx
+  // Stagger a list of items
+  {items.map((item, i) => (
+    <EaseView
+      key={item.id}
+      initialAnimate={{ opacity: 0, translateY: 20 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: 'timing', duration: 300, delay: i * 80 }}
+    />
+  ))}
+  ```
+</ParamField>
+
+<ParamField path="loop" type="'repeat' | 'reverse'">
+  Enables infinite looping for timing animations. Requires `initialAnimate` to define the start value.
+
+  - `'repeat'` — restarts the animation from `initialAnimate` values each cycle
+  - `'reverse'` — alternates direction each cycle (forward, backward, forward, ...)
+
+  <Note>
+    Loop only works with timing animations. Spring transitions do not support looping.
+  </Note>
+
+  ```tsx
+  // Pulsing opacity
+  <EaseView
+    initialAnimate={{ opacity: 0.3 }}
+    animate={{ opacity: 1 }}
+    transition={{ type: 'timing', duration: 1000, easing: 'easeInOut', loop: 'reverse' }}
+  />
+
+  // Marquee scroll
+  <EaseView
+    initialAnimate={{ translateX: 0 }}
+    animate={{ translateX: -300 }}
+    transition={{ type: 'timing', duration: 3000, easing: 'linear', loop: 'repeat' }}
+  />
+  ```
+</ParamField>
+
+## SpringTransition
+
+Animates using a physics-based spring model. Great for interactive elements where natural, organic motion is desired. Spring animations have no fixed duration — they settle when the physics simulation reaches equilibrium.
+
+```tsx
+<EaseView
+  animate={{ translateX: isOpen ? 200 : 0 }}
+  transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+/>
+```
+
+<ParamField path="type" type="'spring'" required>
+  Must be `'spring'` to use a spring transition.
+</ParamField>
+
+<ParamField path="damping" type="number" default="15">
+  Friction applied to the spring. Higher values reduce oscillation and cause the animation to settle faster. Very high values (e.g., `100`) produce a critically damped motion with no bounce.
+</ParamField>
+
+<ParamField path="stiffness" type="number" default="120">
+  Spring constant. Higher values produce a stiffer, faster animation. Lower values produce a softer, slower motion.
+</ParamField>
+
+<ParamField path="mass" type="number" default="1">
+  Mass of the animated object. Higher values produce slower animation with more momentum and overshoot. Lower values produce lighter, snappier motion.
+</ParamField>
+
+<ParamField path="delay" type="number" default="0">
+  Delay in milliseconds before the spring animation starts.
+</ParamField>
+
+### Spring presets
+
+```tsx
+// Snappy — no bounce, fast settle
+{ type: 'spring', damping: 20, stiffness: 300, mass: 1 }
+
+// Gentle bounce — subtle overshoot
+{ type: 'spring', damping: 12, stiffness: 120, mass: 1 }
+
+// Bouncy — noticeable oscillation
+{ type: 'spring', damping: 8, stiffness: 200, mass: 1 }
+
+// Slow and heavy — lots of momentum
+{ type: 'spring', damping: 20, stiffness: 60, mass: 2 }
+```
+
+## NoneTransition
+
+Applies values instantly without any animation. `onTransitionEnd` fires immediately with `{ finished: true }`.
+
+Useful for respecting reduced-motion preferences or resetting state without animation.
+
+```tsx
+import { useReduceMotion } from 'react-native';
+
+function AnimatedItem({ visible }) {
+  const reduceMotion = useReduceMotion();
+
+  return (
+    <EaseView
+      animate={{ opacity: visible ? 1 : 0 }}
+      transition={reduceMotion ? { type: 'none' } : { type: 'timing', duration: 300 }}
+    />
+  );
+}
+```
+
+<ParamField path="type" type="'none'" required>
+  Must be `'none'`. No other properties are accepted.
+</ParamField>
+
+## TransitionMap
+
+Pass an object (without a `type` key) to configure different transitions per property category. Any category not explicitly listed falls back to the `default` config — or to the library default (timing 300ms easeInOut) if `default` is also omitted.
+
+```tsx
+<EaseView
+  animate={{ opacity: visible ? 1 : 0, translateY: visible ? 0 : 30 }}
+  transition={{
+    opacity: { type: 'timing', duration: 150, easing: 'easeOut' },
+    transform: { type: 'spring', damping: 12, stiffness: 200 },
+  }}
+/>
+```
+
+<ParamField path="default" type="SingleTransition">
+  Fallback transition for any property category not explicitly listed in the map.
+
+  ```tsx
+  <EaseView
+    transition={{
+      default: { type: 'spring', damping: 15, stiffness: 120 },
+      opacity: { type: 'timing', duration: 200, easing: 'easeOut' },
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="transform" type="SingleTransition">
+  Transition config for all transform properties: `translateX`, `translateY`, `scaleX`, `scaleY`, `rotate`, `rotateX`, `rotateY`.
+</ParamField>
+
+<ParamField path="opacity" type="SingleTransition">
+  Transition config for `opacity`.
+</ParamField>
+
+<ParamField path="borderRadius" type="SingleTransition">
+  Transition config for `borderRadius`.
+</ParamField>
+
+<ParamField path="backgroundColor" type="SingleTransition">
+  Transition config for `backgroundColor`.
+
+  <Warning>
+    On Android, `backgroundColor` always uses timing regardless of the configured type. Spring transitions for `backgroundColor` fall back to timing 300ms on Android.
+  </Warning>
+</ParamField>
+
+### TransitionMap example
+
+```tsx
+// opacity fades quickly with timing; everything else springs in
+<EaseView
+  animate={{
+    opacity: visible ? 1 : 0,
+    scale: visible ? 1 : 0.9,
+    translateY: visible ? 0 : 16,
+    borderRadius: visible ? 12 : 0,
+  }}
+  transition={{
+    default: { type: 'spring', damping: 14, stiffness: 180 },
+    opacity: { type: 'timing', duration: 200, easing: 'easeOut' },
+    borderRadius: { type: 'timing', duration: 400, easing: 'easeInOut' },
+  }}
+/>
+```
+
+## Default transition
+
+When no `transition` prop is provided, all properties use:
+
+```tsx
+{ type: 'timing', duration: 300, easing: 'easeInOut' }
+```
+
+## Related
+
+- [EaseView](/api/ease-view) — the component that accepts the `transition` prop
+- [AnimateProps](/api/animate-props) — the properties being animated
+- [Types](/api/types) — full TypeScript type reference

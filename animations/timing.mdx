@@ -1,0 +1,84 @@
+---
+title: "Timing Animations"
+description: "Transition between values over a fixed duration with a configurable easing curve."
+---
+
+Timing animations transition from one value to another over a fixed duration with an easing curve. They are the default animation type in `react-native-ease` and map directly to `CABasicAnimation` on iOS and `ObjectAnimator` on Android.
+
+```tsx
+<EaseView
+  animate={{ opacity: isVisible ? 1 : 0 }}
+  transition={{ type: 'timing', duration: 300, easing: 'easeOut' }}
+/>
+```
+
+## Parameters
+
+| Parameter  | Type                             | Default        | Description                                                              |
+| ---------- | -------------------------------- | -------------- | ------------------------------------------------------------------------ |
+| `type`     | `'timing'`                       | —              | Selects timing animation                                                 |
+| `duration` | `number`                         | `300`          | Duration in milliseconds                                                 |
+| `easing`   | `EasingType`                     | `'easeInOut'`  | Easing curve — preset name or `[x1, y1, x2, y2]` cubic bezier           |
+| `delay`    | `number`                         | `0`            | Delay in milliseconds before the animation starts                        |
+| `loop`     | `'repeat' \| 'reverse'`          | —              | `'repeat'` restarts from the beginning, `'reverse'` alternates direction |
+
+## Easing Presets
+
+| Value         | Behavior                                   | Cubic bezier          |
+| ------------- | ------------------------------------------ | --------------------- |
+| `'linear'`    | Constant speed                             | `[0, 0, 1, 1]`        |
+| `'easeIn'`    | Starts slow, accelerates                   | `[0.42, 0, 1, 1]`     |
+| `'easeOut'`   | Starts fast, decelerates                   | `[0, 0, 0.58, 1]`     |
+| `'easeInOut'` | Slow start and end, fast middle (default)  | `[0.42, 0, 0.58, 1]`  |
+
+## Custom Cubic Bezier
+
+Pass a `[x1, y1, x2, y2]` tuple for a custom easing curve. The values correspond to the two control points of the bezier curve and match the CSS `cubic-bezier()` function exactly.
+
+- **x-values** (`x1`, `x2`) must be between `0` and `1`
+- **y-values** (`y1`, `y2`) can exceed `0–1` to produce overshoot or anticipation effects
+
+## Examples
+
+### Basic timing fade
+
+```tsx
+<EaseView
+  animate={{ opacity: isVisible ? 1 : 0 }}
+  transition={{ type: 'timing', duration: 300, easing: 'easeOut' }}
+/>
+```
+
+### Material Design standard easing
+
+```tsx
+<EaseView
+  animate={{ opacity: isVisible ? 1 : 0 }}
+  transition={{ type: 'timing', duration: 300, easing: [0.4, 0, 0.2, 1] }}
+/>
+```
+
+### Overshoot easing
+
+Y-values outside `0–1` produce overshoot. The curve below creates a spring-like snap past the target before settling.
+
+```tsx
+<EaseView
+  animate={{ scale: active ? 1.2 : 1 }}
+  transition={{ type: 'timing', duration: 500, easing: [0.68, -0.55, 0.265, 1.55] }}
+/>
+```
+
+### Delayed start
+
+```tsx
+<EaseView
+  initialAnimate={{ opacity: 0, translateY: 20 }}
+  animate={{ opacity: 1, translateY: 0 }}
+  transition={{ type: 'timing', duration: 300, easing: 'easeOut', delay: 150 }}
+/>
+```
+
+<Tip>
+  Choose `'easeOut'` for elements entering the screen (fast start feels responsive), `'easeIn'` for elements leaving (slow start, then gone), and `'easeInOut'` for in-place transitions where smoothness matters more than speed.
+</Tip>

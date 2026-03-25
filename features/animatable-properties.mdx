@@ -1,0 +1,137 @@
+---
+title: "Animatable Properties"
+description: "Complete reference for all properties that can be animated with the animate prop."
+---
+
+All properties are set in the `animate` prop as flat values — no transform array required. You can animate any combination of properties simultaneously.
+
+## Properties Reference
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `opacity` | `number` | `1` | View opacity (0–1) |
+| `translateX` | `number` | `0` | Horizontal translation in pixels |
+| `translateY` | `number` | `0` | Vertical translation in pixels |
+| `scale` | `number` | `1` | Uniform scale shorthand for `scaleX` + `scaleY` |
+| `scaleX` | `number` | `1` | Horizontal scale (overrides `scale` for X axis) |
+| `scaleY` | `number` | `1` | Vertical scale (overrides `scale` for Y axis) |
+| `rotate` | `number` | `0` | Z-axis rotation in degrees |
+| `rotateX` | `number` | `0` | X-axis rotation in degrees (3D) |
+| `rotateY` | `number` | `0` | Y-axis rotation in degrees (3D) |
+| `borderRadius` | `number` | `0` | Border radius in pixels — hardware-accelerated, clips children |
+| `backgroundColor` | `ColorValue` | `'transparent'` | Background color — any React Native color value |
+
+## Full Example
+
+```tsx
+<EaseView
+  animate={{
+    opacity: 1, // 0 to 1
+    translateX: 0, // pixels
+    translateY: 0, // pixels
+    scale: 1, // 1 = normal size (shorthand for scaleX + scaleY)
+    scaleX: 1, // horizontal scale
+    scaleY: 1, // vertical scale
+    rotate: 0, // Z-axis rotation in degrees
+    rotateX: 0, // X-axis rotation in degrees (3D)
+    rotateY: 0, // Y-axis rotation in degrees (3D)
+    borderRadius: 0, // pixels (hardware-accelerated, clips children)
+    backgroundColor: 'transparent', // any RN color value
+  }}
+/>
+```
+
+Properties not specified in `animate` default to their identity values and are not animated.
+
+## scale Shorthand
+
+`scale` sets both `scaleX` and `scaleY` to the same value. When `scaleX` or `scaleY` is also provided, it overrides the `scale` value for that axis.
+
+```tsx
+// Sets scaleX=1.5 and scaleY=1.5
+<EaseView animate={{ scale: 1.5 }} />
+
+// Sets scaleX=2, scaleY=1.5 — scaleX overrides scale for the X axis
+<EaseView animate={{ scale: 1.5, scaleX: 2 }} />
+```
+
+## Style Conflicts
+
+`EaseView` accepts all standard `ViewStyle` properties in the `style` prop. If a property appears in both `style` and `animate`, **the animated value takes priority** and the style value is stripped. A dev warning is logged when this happens.
+
+```tsx
+// opacity in style works — only translateY is animated
+<EaseView
+  animate={{ translateY: moved ? -10 : 0 }}
+  transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+  style={{
+    opacity: 0.9,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+  }}
+>
+  <Text>Notification card</Text>
+</EaseView>
+
+// ⚠️ opacity is in both — animate wins, style opacity is stripped, dev warning logged
+<EaseView
+  animate={{ opacity: 1 }}
+  style={{ opacity: 0.5, backgroundColor: 'white' }}
+/>
+```
+
+<Note>
+  The conflict check covers `opacity`, `borderRadius`, `backgroundColor`, and the `transform` style key (which corresponds to all translate/scale/rotate properties). Non-conflicting style properties are passed through untouched.
+</Note>
+
+## borderRadius
+
+Animated `borderRadius` uses hardware-accelerated platform APIs — unlike React Native's style-based `borderRadius` which uses a Canvas drawable on Android.
+
+<Tabs>
+  <Tab title="Android">
+    Uses `ViewOutlineProvider` + `clipToOutline`. The outline clips all children to the rounded boundary at the GPU level.
+  </Tab>
+  <Tab title="iOS">
+    Uses `layer.cornerRadius` + `layer.masksToBounds`. Children are clipped to the corner radius via the layer.
+  </Tab>
+</Tabs>
+
+```tsx
+<EaseView
+  animate={{ borderRadius: expanded ? 0 : 16 }}
+  transition={{ type: 'timing', duration: 300 }}
+  style={styles.card}
+>
+  <Image source={heroImage} style={styles.image} />
+  <Text>Content is clipped to rounded corners</Text>
+</EaseView>
+```
+
+When `borderRadius` is in `animate`, any `borderRadius` in `style` is automatically stripped to avoid conflicts.
+
+## backgroundColor
+
+Colors are converted to native ARGB integers via `processColor()`. Any React Native color value is accepted — hex strings, `rgb()`, named colors, etc.
+
+```tsx
+<EaseView
+  animate={{ backgroundColor: isActive ? '#3B82F6' : '#E5E7EB' }}
+  transition={{ type: 'timing', duration: 300 }}
+  style={styles.card}
+>
+  <Text>Tap to change color</Text>
+</EaseView>
+```
+
+<Tabs>
+  <Tab title="Android">
+    Uses `ValueAnimator.ofArgb()` — **timing only**. Spring transitions for `backgroundColor` are not supported and fall back to timing with the default duration.
+  </Tab>
+  <Tab title="iOS">
+    Uses `CAAnimation` on the `backgroundColor` layer key path. Both timing and spring transitions are supported.
+  </Tab>
+</Tabs>
+
+When `backgroundColor` is in `animate`, any `backgroundColor` in `style` is automatically stripped.

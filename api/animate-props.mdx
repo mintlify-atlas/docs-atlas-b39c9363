@@ -1,0 +1,199 @@
+---
+title: 'AnimateProps'
+description: 'Animatable view properties for the animate and initialAnimate props'
+---
+
+`AnimateProps` defines the set of properties that `EaseView` can animate. All properties are set as flat values — there is no `transform` array like in standard React Native styles.
+
+Properties not specified in `animate` default to their identity values (the value that produces no visible change — `0` for translations, `1` for scale, etc.).
+
+## Type definition
+
+```tsx
+import type { ColorValue } from 'react-native';
+
+type AnimateProps = {
+  opacity?: number;
+  translateX?: number;
+  translateY?: number;
+  scale?: number;
+  scaleX?: number;
+  scaleY?: number;
+  rotate?: number;
+  rotateX?: number;
+  rotateY?: number;
+  borderRadius?: number;
+  backgroundColor?: ColorValue;
+};
+```
+
+## Properties
+
+<ParamField path="opacity" type="number" default="1">
+  View opacity. Accepts values from `0` (fully transparent) to `1` (fully opaque).
+
+  ```tsx
+  <EaseView animate={{ opacity: isVisible ? 1 : 0 }} />
+  ```
+</ParamField>
+
+<ParamField path="translateX" type="number" default="0">
+  Horizontal translation in density-independent pixels. Positive values move the view right; negative values move it left.
+
+  ```tsx
+  <EaseView animate={{ translateX: isOpen ? 0 : -300 }} />
+  ```
+</ParamField>
+
+<ParamField path="translateY" type="number" default="0">
+  Vertical translation in density-independent pixels. Positive values move the view down; negative values move it up.
+
+  ```tsx
+  <EaseView animate={{ translateY: visible ? 0 : 20 }} />
+  ```
+</ParamField>
+
+<ParamField path="scale" type="number" default="1">
+  Uniform scale factor applied to both axes. `1` is normal size, `0.5` is half size, `2` is double size.
+
+  This is a shorthand that sets both `scaleX` and `scaleY`. If `scaleX` or `scaleY` is also provided, those values override `scale` for their respective axis.
+
+  ```tsx
+  <EaseView animate={{ scale: active ? 1.05 : 1 }} />
+  ```
+</ParamField>
+
+<ParamField path="scaleX" type="number" default="1">
+  Horizontal scale factor. Overrides `scale` for the X axis when both are specified.
+
+  ```tsx
+  <EaseView animate={{ scaleX: expanded ? 1 : 0 }} />
+  ```
+</ParamField>
+
+<ParamField path="scaleY" type="number" default="1">
+  Vertical scale factor. Overrides `scale` for the Y axis when both are specified.
+
+  ```tsx
+  <EaseView animate={{ scaleY: expanded ? 1 : 0 }} />
+  ```
+</ParamField>
+
+<ParamField path="rotate" type="number" default="0">
+  Z-axis rotation in degrees. Positive values rotate clockwise.
+
+  ```tsx
+  <EaseView animate={{ rotate: isOpen ? 45 : 0 }} />
+  ```
+</ParamField>
+
+<ParamField path="rotateX" type="number" default="0">
+  X-axis rotation in degrees (3D perspective flip around the horizontal axis). Positive values tip the top of the view away from the viewer.
+
+  ```tsx
+  <EaseView animate={{ rotateX: flipped ? 180 : 0 }} />
+  ```
+</ParamField>
+
+<ParamField path="rotateY" type="number" default="0">
+  Y-axis rotation in degrees (3D perspective flip around the vertical axis). Positive values tip the right side of the view away from the viewer.
+
+  ```tsx
+  <EaseView animate={{ rotateY: flipped ? 180 : 0 }} />
+  ```
+</ParamField>
+
+<ParamField path="borderRadius" type="number" default="0">
+  Border radius in pixels. Uses hardware-accelerated clipping — `ViewOutlineProvider` + `clipToOutline` on Android and `layer.cornerRadius` + `layer.masksToBounds` on iOS. Children are clipped to the rounded bounds.
+
+  Unlike React Native's style-based `borderRadius` (which uses a Canvas drawable on Android), this clips children correctly and is GPU-accelerated.
+
+  When `borderRadius` is in `animate`, any `borderRadius` in `style` is automatically stripped to avoid conflicts.
+
+  ```tsx
+  <EaseView
+    animate={{ borderRadius: expanded ? 0 : 16 }}
+    style={styles.card}
+  >
+    <Image source={heroImage} style={styles.image} />
+  </EaseView>
+  ```
+</ParamField>
+
+<ParamField path="backgroundColor" type="ColorValue">
+  Background color. Accepts any React Native color value — hex strings, named colors, `rgb()`, `rgba()`, etc.
+
+  When `backgroundColor` is in `animate`, any `backgroundColor` in `style` is automatically stripped to avoid conflicts.
+
+  <Warning>
+    On Android, `backgroundColor` animation uses `ValueAnimator.ofArgb()` which only supports timing transitions. If the active transition is `type: 'spring'`, it silently falls back to timing with the default duration. On iOS, both timing and spring transitions work for background color.
+  </Warning>
+
+  ```tsx
+  <EaseView
+    animate={{ backgroundColor: isActive ? '#3B82F6' : '#E5E7EB' }}
+    transition={{ type: 'timing', duration: 300 }}
+  />
+  ```
+</ParamField>
+
+## Full example
+
+```tsx
+<EaseView
+  animate={{
+    opacity: 1,
+    translateX: 0,
+    translateY: 0,
+    scale: 1,       // shorthand for scaleX + scaleY
+    scaleX: 1,      // overrides scale for X axis
+    scaleY: 1,      // overrides scale for Y axis
+    rotate: 0,      // Z-axis rotation in degrees
+    rotateX: 0,     // X-axis rotation in degrees (3D)
+    rotateY: 0,     // Y-axis rotation in degrees (3D)
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+  }}
+  transition={{ type: 'spring', damping: 15, stiffness: 120 }}
+/>
+```
+
+## Identity defaults
+
+Properties omitted from `animate` use their identity values:
+
+| Property          | Identity value  |
+| ----------------- | --------------- |
+| `opacity`         | `1`             |
+| `translateX`      | `0`             |
+| `translateY`      | `0`             |
+| `scale`           | `1`             |
+| `scaleX`          | `1`             |
+| `scaleY`          | `1`             |
+| `rotate`          | `0`             |
+| `rotateX`         | `0`             |
+| `rotateY`         | `0`             |
+| `borderRadius`    | `0`             |
+| `backgroundColor` | `'transparent'` |
+
+## scale shorthand behavior
+
+`scale` is a convenience shorthand. When only `scale` is specified, it applies equally to both axes:
+
+```tsx
+// These two are equivalent:
+<EaseView animate={{ scale: 1.2 }} />
+<EaseView animate={{ scaleX: 1.2, scaleY: 1.2 }} />
+```
+
+When `scale` and an explicit `scaleX` or `scaleY` are both provided, the explicit value wins for that axis:
+
+```tsx
+// scaleX stays at 1.2, but scaleY is overridden to 0.8
+<EaseView animate={{ scale: 1.2, scaleY: 0.8 }} />
+```
+
+## Related
+
+- [EaseView](/api/ease-view) — the component that accepts `animate` and `initialAnimate`
+- [Transition](/api/transition) — control the animation curve

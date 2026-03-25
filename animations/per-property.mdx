@@ -1,0 +1,57 @@
+---
+title: "Per-Property Transitions"
+description: "Apply different animation types to different property categories in a single EaseView."
+---
+
+By default, a single transition config applies to all animated properties. When you need finer control — for example, a snappy spring for movement but a quick fade for opacity — pass a `TransitionMap` instead of a single config.
+
+A `TransitionMap` maps property categories to individual transition configs:
+
+```tsx
+<EaseView
+  animate={{ opacity: visible ? 1 : 0, translateY: visible ? 0 : 30 }}
+  transition={{
+    opacity: { type: 'timing', duration: 150, easing: 'easeOut' },
+    transform: { type: 'spring', damping: 12, stiffness: 200 },
+  }}
+/>
+```
+
+## Category keys
+
+| Key               | Properties covered                                                        |
+| ----------------- | ------------------------------------------------------------------------- |
+| `default`         | Fallback for any category not explicitly listed in the map                |
+| `transform`       | `translateX`, `translateY`, `scaleX`, `scaleY`, `rotate`, `rotateX`, `rotateY` |
+| `opacity`         | `opacity`                                                                 |
+| `borderRadius`    | `borderRadius`                                                            |
+| `backgroundColor` | `backgroundColor`                                                         |
+
+## Using `default` as a fallback
+
+When a category is not listed in the map, the library falls back to the `default` key. If no `default` key is present either, the library default (timing 300ms `easeInOut`) applies.
+
+```tsx
+<EaseView
+  animate={{ opacity: 1, scale: 1.2, translateY: -20 }}
+  transition={{
+    default: { type: 'spring', damping: 15, stiffness: 120 },
+    opacity: { type: 'timing', duration: 200, easing: 'easeOut' },
+  }}
+/>
+```
+
+In this example, `scale` and `translateY` (both in the `transform` category) use the spring defined under `default`. `opacity` uses its own timing config.
+
+## When to use per-property vs a single config
+
+| Scenario                                           | Recommendation               |
+| -------------------------------------------------- | ---------------------------- |
+| All properties should move the same way            | Single config                |
+| Opacity should fade faster than transforms spring  | Per-property map             |
+| Background color needs timing while transforms spring | Per-property map          |
+| You want a global fallback with one override       | `default` + specific key     |
+
+<Note>
+  On Android, `backgroundColor` is animated with `ValueAnimator.ofArgb()`, which only supports timing transitions. If you specify `type: 'spring'` for the `backgroundColor` key, it silently falls back to timing with a 300ms duration.
+</Note>

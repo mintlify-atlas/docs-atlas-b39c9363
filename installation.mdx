@@ -1,0 +1,115 @@
+---
+title: "Installation"
+description: "Add react-native-ease to your React Native project."
+---
+
+<Warning>
+  `react-native-ease` is a **Fabric-only** library. It does not work with the old React Native architecture. If your project has not migrated to the new architecture, the library will not function and will throw at runtime.
+</Warning>
+
+## Requirements
+
+Before installing, confirm your project meets these requirements:
+
+- React Native **0.76+**
+- iOS **15.1+**
+- Android **minSdk 24+**
+- New architecture (Fabric) **enabled**
+
+## Install
+
+<Steps>
+  <Step title="Add the package">
+    Install `react-native-ease` with your package manager:
+
+    <CodeGroup>
+
+    ```bash npm
+    npm install react-native-ease
+    ```
+
+    ```bash yarn
+    yarn add react-native-ease
+    ```
+
+    ```bash pnpm
+    pnpm add react-native-ease
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Verify the new architecture is enabled">
+    `react-native-ease` requires Fabric. To confirm it is active, check the Metro output when you start your app:
+
+    ```
+    Running "YourApp" with {"fabric":true,"initialProps":{"concurrentRoot":true},"rootTag":1}
+    ```
+
+    Both `"fabric":true` and `"concurrentRoot":true` must be present.
+
+    If you are starting a new project, create it with:
+
+    ```bash
+    npx react-native@latest init MyApp
+    ```
+
+    New projects created with React Native 0.76+ have the new architecture enabled by default.
+
+    <Info>
+      For existing projects, follow the [React Native new architecture migration guide](https://reactnative.dev/docs/new-architecture-intro) to enable Fabric.
+    </Info>
+  </Step>
+
+  <Step title="iOS setup">
+    No additional native setup is required. `react-native-ease` is a Fabric native component — CocoaPods handles linking automatically.
+
+    If you added the package to an existing project, re-run pod install:
+
+    ```bash
+    cd ios && pod install
+    ```
+  </Step>
+
+  <Step title="Android setup">
+    No additional native setup is required. The library registers its `EasePackage` automatically through React Native's auto-linking.
+  </Step>
+
+  <Step title="Verify the installation">
+    Import `EaseView` in a component and confirm it renders without errors:
+
+    ```tsx
+    import { EaseView } from 'react-native-ease';
+
+    export function VerifyInstall() {
+      return (
+        <EaseView
+          animate={{ opacity: 1 }}
+          transition={{ type: 'timing', duration: 300 }}
+          style={{ width: 100, height: 100, backgroundColor: '#3B82F6' }}
+        />
+      );
+    }
+    ```
+
+    If the blue square renders without a red error screen, the installation is working.
+  </Step>
+</Steps>
+
+## Migration skill
+
+If your project already uses `react-native-reanimated` or React Native's `Animated` API, you can use the Agent Skill to migrate animations automatically.
+
+```bash
+npx skills add appandflow/react-native-ease
+```
+
+Then invoke the skill in your agent (for example, `/react-native-ease-refactor` in Claude Code). The skill will:
+
+1. Scan your project for Reanimated and Animated code
+2. Classify which animations can be migrated and which cannot, with reasons
+3. Show a migration report with before/after details
+4. Let you select which components to migrate
+5. Apply the changes, preserving all non-animation logic
+
+For more detail on migrating by hand, see the [Migration guide](/guides/migration).

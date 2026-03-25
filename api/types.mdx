@@ -1,0 +1,215 @@
+---
+title: 'Types'
+description: 'Complete TypeScript type reference for react-native-ease'
+---
+
+All public types are exported from the `react-native-ease` package. Import only what you need:
+
+```tsx
+import type {
+  AnimateProps,
+  Transition,
+  TimingTransition,
+  SpringTransition,
+  NoneTransition,
+  EasingType,
+  CubicBezier,
+  TransitionEndEvent,
+  TransformOrigin,
+  EaseViewProps,
+} from 'react-native-ease';
+```
+
+## EasingType
+
+```tsx
+type EasingType =
+  | 'linear'
+  | 'easeIn'
+  | 'easeOut'
+  | 'easeInOut'
+  | CubicBezier;
+```
+
+Used in [TimingTransition](/api/transition#timingtransition) to specify the easing curve. Either a preset name or a custom cubic bezier tuple.
+
+| Preset        | Description                      |
+| ------------- | -------------------------------- |
+| `'linear'`    | Constant speed                   |
+| `'easeIn'`    | Starts slow, accelerates         |
+| `'easeOut'`   | Starts fast, decelerates         |
+| `'easeInOut'` | Slow start and end, fast middle  |
+
+For custom curves, use a `CubicBezier` tuple (see below).
+
+## CubicBezier
+
+```tsx
+type CubicBezier = [number, number, number, number];
+```
+
+A four-element tuple `[x1, y1, x2, y2]` representing the two control points of a cubic bezier curve. Matches the CSS `cubic-bezier()` function.
+
+**Constraints:**
+- `x1` and `x2` must be between `0` and `1`
+- `y1` and `y2` can exceed the `0`–`1` range to create overshoot/undershoot effects
+
+```tsx
+// Material Design standard easing
+const standardEasing: CubicBezier = [0.4, 0, 0.2, 1];
+
+// Overshoot for a bouncy feel (y-values exceed 0–1)
+const bouncyEasing: CubicBezier = [0.68, -0.55, 0.265, 1.55];
+
+<EaseView
+  animate={{ scale: active ? 1.1 : 1 }}
+  transition={{ type: 'timing', duration: 400, easing: bouncyEasing }}
+/>
+```
+
+<Note>
+  A dev warning is logged if the tuple length is not exactly 4, or if `x1`/`x2` values fall outside the `0`–`1` range.
+</Note>
+
+## TransformOrigin
+
+```tsx
+type TransformOrigin = {
+  /** Horizontal origin. 0 = left, 0.5 = center, 1 = right. @default 0.5 */
+  x?: number;
+  /** Vertical origin. 0 = top, 0.5 = center, 1 = bottom. @default 0.5 */
+  y?: number;
+};
+```
+
+Pivot point for scale and rotation animations, expressed as 0–1 fractions of the view's dimensions. Passed to the `transformOrigin` prop on `EaseView`.
+
+```tsx
+import type { TransformOrigin } from 'react-native-ease';
+
+const topLeft: TransformOrigin = { x: 0, y: 0 };
+const center: TransformOrigin = { x: 0.5, y: 0.5 };  // default
+const bottomRight: TransformOrigin = { x: 1, y: 1 };
+
+<EaseView
+  animate={{ rotate: isOpen ? 90 : 0 }}
+  transformOrigin={topLeft}
+/>
+```
+
+## TransitionEndEvent
+
+```tsx
+type TransitionEndEvent = {
+  /** True if the animation completed naturally, false if interrupted. */
+  finished: boolean;
+};
+```
+
+Passed to the `onTransitionEnd` callback on `EaseView`. `finished` is `false` when a new animation starts before the previous one completes.
+
+```tsx
+import type { TransitionEndEvent } from 'react-native-ease';
+
+function handleEnd(event: TransitionEndEvent) {
+  if (event.finished) {
+    // animation played to completion
+  } else {
+    // animation was interrupted by a new target value
+  }
+}
+
+<EaseView
+  animate={{ opacity: visible ? 1 : 0 }}
+  onTransitionEnd={handleEnd}
+/>
+```
+
+## AnimateProps
+
+```tsx
+import type { ColorValue } from 'react-native';
+
+type AnimateProps = {
+  opacity?: number;
+  translateX?: number;
+  translateY?: number;
+  scale?: number;
+  scaleX?: number;
+  scaleY?: number;
+  rotate?: number;
+  rotateX?: number;
+  rotateY?: number;
+  borderRadius?: number;
+  backgroundColor?: ColorValue;
+};
+```
+
+See the full [AnimateProps reference](/api/animate-props) for per-property documentation, defaults, and examples.
+
+## Transition types
+
+The `Transition` type is a union of `SingleTransition` and `TransitionMap`:
+
+```tsx
+type Transition = SingleTransition | TransitionMap;
+
+type SingleTransition =
+  | TimingTransition
+  | SpringTransition
+  | NoneTransition;
+
+type TimingTransition = {
+  type: 'timing';
+  duration?: number;        // default: 300
+  easing?: EasingType;      // default: 'easeInOut'
+  loop?: 'repeat' | 'reverse';
+  delay?: number;           // default: 0
+};
+
+type SpringTransition = {
+  type: 'spring';
+  damping?: number;         // default: 15
+  stiffness?: number;       // default: 120
+  mass?: number;            // default: 1
+  delay?: number;           // default: 0
+};
+
+type NoneTransition = {
+  type: 'none';
+};
+
+type TransitionMap = {
+  default?: SingleTransition;
+  transform?: SingleTransition;
+  opacity?: SingleTransition;
+  borderRadius?: SingleTransition;
+  backgroundColor?: SingleTransition;
+};
+```
+
+See the full [Transition reference](/api/transition) for per-type documentation and examples.
+
+## EaseViewProps
+
+```tsx
+import type { ViewProps, ViewStyle } from 'react-native';
+
+type EaseViewProps = ViewProps & {
+  animate?: AnimateProps;
+  initialAnimate?: AnimateProps;
+  transition?: Transition;
+  onTransitionEnd?: (event: TransitionEndEvent) => void;
+  useHardwareLayer?: boolean;
+  transformOrigin?: TransformOrigin;
+  className?: string;
+};
+```
+
+The full props type for `EaseView`, extending React Native's `ViewProps`. See the [EaseView reference](/api/ease-view) for per-prop documentation.
+
+## Related
+
+- [EaseView](/api/ease-view) — component props reference
+- [AnimateProps](/api/animate-props) — animatable properties
+- [Transition](/api/transition) — animation configuration

@@ -1,0 +1,45 @@
+---
+title: "Hardware Layers (Android)"
+description: "Rasterize a view to a GPU texture during animation for faster opacity, scale, and rotation compositing on Android."
+---
+
+The `useHardwareLayer` prop is an **Android-only** optimization that rasterizes the view into a GPU texture for the duration of the animation. This allows animated property changes (opacity, scale, rotation) to be composited on the RenderThread without redrawing the view hierarchy.
+
+<Note>
+  `useHardwareLayer` is a no-op on iOS. Core Animation already composites off the main thread, so no extra configuration is needed.
+</Note>
+
+## Usage
+
+```tsx
+<EaseView animate={{ opacity: isVisible ? 1 : 0 }} useHardwareLayer />
+```
+
+## How It Works
+
+When `useHardwareLayer` is enabled, Android promotes the view to a `LAYER_TYPE_HARDWARE` layer before the animation starts and demotes it back when the animation ends. The rasterized texture is then composited on the RenderThread — the GPU handles opacity, scale, and rotation changes without involving the CPU or redrawing any child views.
+
+This is most effective for views with complex hierarchies (many children, text, images) where each frame would otherwise require a full redraw.
+
+## Trade-offs
+
+| | Detail |
+| --- | --- |
+| ✅ Faster opacity/scale/rotation | Animated property changes are composited on the RenderThread without redrawing the view hierarchy |
+| ❌ Additional GPU memory | An off-screen texture is allocated proportional to the view's pixel dimensions |
+| ❌ Overflow clipping | Children that extend outside the view's layout bounds are **clipped** by the texture boundary |
+
+<Warning>
+  If you use `useHardwareLayer` on a view that animates `translateX` or `translateY` with children that overflow its layout bounds, those children will be clipped to the view's bounds for the duration of the animation. This causes visible visual artifacts. Avoid `useHardwareLayer` in this case.
+</Warning>
+
+## When to Use
+
+**Use `useHardwareLayer` when:**
+- Animating `opacity`, `scale`, or `rotation`
+- The view has many children or is visually complex
+- Children do not overflow the view's layout bounds
+
+**Do not use `useHardwareLayer` when:**
+- Animating `translateX` or `translateY` with children that overflow layout bounds
+- The view is small or simple — the overhead of allocating a texture may outweigh the benefit

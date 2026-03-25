@@ -1,97 +1,89 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "react-native-ease"
+description: "Lightweight declarative animations powered by platform APIs. Zero JS overhead — animations run natively on iOS and Android."
 ---
 
-## Setting up
+`react-native-ease` gives you smooth, interruptible animations through a single `EaseView` component. Set target values, get native animations — no JS animation loop, no worklets, no shared values.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Add react-native-ease to your project in seconds
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Build your first animation in under five minutes
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="API Reference" icon="code" href="/api/ease-view">
+    Full reference for EaseView props and types
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="vs Reanimated" icon="scale-balanced" href="/guides/vs-reanimated">
+    Understand when to use Ease vs Reanimated
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Why react-native-ease
 
-Everything you need to create world-class documentation.
+Animations in React Native traditionally run on the JS thread or require complex worklet setups. `react-native-ease` takes a different approach — it delegates everything to platform APIs.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={2}>
+  <Card title="Zero JS overhead" icon="bolt">
+    Core Animation on iOS and ObjectAnimator on Android run off the JS thread entirely
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="Simple API" icon="feather">
+    CSS-transition-like: set target values in `animate`, get smooth motion
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="Interruptible" icon="arrow-right-arrow-left">
+    Change values mid-animation and the view smoothly redirects — no jumps
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
+  <Card title="Lightweight" icon="leaf">
+    No C++ runtime, no custom engine — just a thin wrapper around OS-provided APIs
   </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+## Quick example
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+```tsx
+import { EaseView } from 'react-native-ease';
+
+function FadeCard({ visible, children }) {
+  return (
+    <EaseView
+      animate={{ opacity: visible ? 1 : 0 }}
+      transition={{ type: 'timing', duration: 300 }}
+      style={styles.card}
+    >
+      {children}
+    </EaseView>
+  );
+}
+```
+
+`EaseView` works like a standard `View` — it accepts children, styles, and all `ViewProps`. When values in `animate` change, it smoothly transitions to the new values using native platform animations.
+
+## Get started
+
+<Steps>
+  <Step title="Install the package">
+    ```bash
+    npm install react-native-ease
+    ```
+    Requires React Native 0.76+ with the new architecture (Fabric) enabled.
+  </Step>
+  <Step title="Use EaseView in your component">
+    Replace any `View` you want to animate with `EaseView` and add an `animate` prop.
+  </Step>
+  <Step title="Configure the transition">
+    Choose between timing (fixed duration + easing) or spring (physics-based) transitions.
+  </Step>
+</Steps>
+
+## Requirements
+
+<Info>
+  react-native-ease requires **React Native 0.76+** with the **new architecture (Fabric)** enabled. It does not support the old architecture.
+</Info>
+
+| Platform | Minimum version |
+|----------|----------------|
+| React Native | 0.76+ |
+| iOS | 15.1+ |
+| Android | minSdk 24+ |

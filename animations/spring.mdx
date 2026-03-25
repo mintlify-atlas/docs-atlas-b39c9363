@@ -1,0 +1,67 @@
+---
+title: "Spring Animations"
+description: "Physics-based animations that produce natural, organic motion without a fixed duration."
+---
+
+Spring animations use a physics-based model for natural-feeling motion. Rather than completing in a fixed duration, a spring settles when the simulated physics reach equilibrium. This makes spring ideal for interactive elements and enter animations where motion should feel alive.
+
+```tsx
+<EaseView
+  animate={{ translateX: isOpen ? 200 : 0 }}
+  transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+/>
+```
+
+On iOS, `CASpringAnimation` receives `damping`, `stiffness`, and `mass` directly. On Android, `SpringAnimation` derives its damping ratio from these values using: `dampingRatio = damping / (2 * sqrt(stiffness * mass))`.
+
+## Parameters
+
+| Parameter   | Type     | Default | Description                                                   |
+| ----------- | -------- | ------- | ------------------------------------------------------------- |
+| `type`      | `'spring'` | —     | Selects spring animation                                      |
+| `damping`   | `number` | `15`    | Friction — higher values reduce oscillation and bounce        |
+| `stiffness` | `number` | `120`   | Spring constant — higher values mean a faster, snappier animation |
+| `mass`      | `number` | `1`     | Mass of the object — higher values mean slower motion with more momentum |
+| `delay`     | `number` | `0`     | Delay in milliseconds before the animation starts             |
+
+### Parameter intuition
+
+- **`damping`** controls how quickly oscillation dies out. A low damping value (e.g. `8`) produces noticeable bounce; a high value (e.g. `20`) reaches the target without overshoot.
+- **`stiffness`** controls the speed of the animation. Higher stiffness means the spring pulls harder and the animation completes faster.
+- **`mass`** adds inertia. Heavier objects take longer to accelerate and decelerate, producing a weighty feel.
+
+## Spring Presets
+
+These presets cover the most common animation feels:
+
+```tsx
+// Snappy — reaches target quickly with no bounce
+{ type: 'spring', damping: 20, stiffness: 300, mass: 1 }
+
+// Gentle bounce — subtle overshoot, natural feel
+{ type: 'spring', damping: 12, stiffness: 120, mass: 1 }
+
+// Bouncy — noticeable oscillation, playful
+{ type: 'spring', damping: 8, stiffness: 200, mass: 1 }
+
+// Slow and heavy — deliberate, high-momentum motion
+{ type: 'spring', damping: 20, stiffness: 60, mass: 2 }
+```
+
+## Example
+
+```tsx
+<EaseView
+  initialAnimate={{ opacity: 0, translateY: 20 }}
+  animate={{ opacity: 1, translateY: 0 }}
+  transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+/>
+```
+
+<Note>
+  Spring animations do not support the `loop` option. Use a timing animation with `loop: 'repeat'` or `loop: 'reverse'` for looping effects.
+</Note>
+
+<Note>
+  On Android, the damping ratio passed to `SpringAnimation` is derived from `damping`, `stiffness`, and `mass` using the formula `damping / (2 * sqrt(stiffness * mass))`. The three parameters are not passed to Android directly, but the resulting motion closely matches iOS for typical values.
+</Note>

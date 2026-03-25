@@ -1,0 +1,82 @@
+---
+title: "Enter & Exit Animations"
+description: "Animate views into and out of the screen using initialAnimate and state-driven animate values."
+---
+
+## Enter animations
+
+Use `initialAnimate` to define the starting values for a view when it first mounts. On mount, the view starts at `initialAnimate` values and animates to `animate` values.
+
+```tsx
+// Fade in and slide up on mount
+<EaseView
+  initialAnimate={{ opacity: 0, translateY: 20 }}
+  animate={{ opacity: 1, translateY: 0 }}
+  transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+/>
+```
+
+Without `initialAnimate`, the view renders immediately at the `animate` values with no transition on mount.
+
+## Exit animations
+
+`EaseView` does not have a dedicated exit prop. Exit animations are driven by state: update `animate` values when a component should leave, and the native animation runs to those new values.
+
+```tsx
+function Card({ visible }) {
+  return (
+    <EaseView
+      animate={{ opacity: visible ? 1 : 0, translateY: visible ? 0 : 20 }}
+      transition={{ type: 'timing', duration: 200, easing: 'easeIn' }}
+      style={styles.card}
+    />
+  );
+}
+```
+
+To unmount a view only after its exit animation completes, listen for `onTransitionEnd` and remove the component from the tree once `finished` is `true`.
+
+```tsx
+function FadeCard({ visible, children }) {
+  const [mounted, setMounted] = React.useState(visible);
+
+  React.useEffect(() => {
+    if (visible) setMounted(true);
+  }, [visible]);
+
+  if (!mounted) return null;
+
+  return (
+    <EaseView
+      animate={{ opacity: visible ? 1 : 0 }}
+      transition={{ type: 'timing', duration: 200, easing: 'easeIn' }}
+      onTransitionEnd={({ finished }) => {
+        if (finished && !visible) setMounted(false);
+      }}
+    >
+      {children}
+    </EaseView>
+  );
+}
+```
+
+## Staggered enter animations
+
+Use the `delay` prop to offset enter animations across a list. Multiply the item index by a fixed interval to cascade the animations in sequence.
+
+```tsx
+{items.map((item, i) => (
+  <EaseView
+    key={item.id}
+    initialAnimate={{ opacity: 0, translateY: 20 }}
+    animate={{ opacity: 1, translateY: 0 }}
+    transition={{ type: 'timing', duration: 300, delay: i * 100 }}
+  >
+    <Text>{item.label}</Text>
+  </EaseView>
+))}
+```
+
+<Tip>
+  Keep stagger intervals short (80–120ms) for lists with more than 5 items. Longer intervals make the tail of the list feel sluggish before it becomes visible.
+</Tip>

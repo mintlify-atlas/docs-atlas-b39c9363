@@ -1,0 +1,124 @@
+---
+title: "react-native-ease vs Reanimated"
+description: "Understand when to choose react-native-ease over Reanimated, how they differ architecturally, and benchmark data comparing both libraries."
+---
+
+`react-native-ease` and `react-native-reanimated` solve different problems. Choosing the right tool depends on what kind of animation you need.
+
+## When to use react-native-ease
+
+- **Fade / slide / scale on state change** ✅ — Toggle visibility, animate cards in and out, react to boolean state
+- **Enter / exit animations** ✅ — Views fade or slide in on mount using `initialAnimate`
+- **Simple declarative animations tied to state** ✅ — Set target values, get native motion
+
+## When to use Reanimated
+
+- **Gesture-driven animations (pan, pinch)** ✅ — Use `react-native-gesture-handler` with Reanimated shared values
+- **Layout animations (width, height)** ✅ — Animating layout properties that require recalculation
+- **Complex interpolations and chaining** ✅ — `useAnimatedStyle`, `withSequence`, `withDelay` chains
+- **Shared element transitions** ✅ — Cross-screen element continuity via Reanimated or React Navigation
+- **Animation worklets and shared values across components** ✅ — Cross-component coordinated animation
+
+## Comparison table
+
+| Use case | Ease | Reanimated |
+| --- | --- | --- |
+| Fade/slide/scale on state change | ✅ | |
+| Enter/exit animations | ✅ | |
+| Simple declarative animations tied to state | ✅ | |
+| Gesture-driven animations (pan, pinch) | | ✅ |
+| Layout animations (width, height) | | ✅ |
+| Complex interpolations & chaining | | ✅ |
+| Shared element transitions | | ✅ |
+| Animation worklets, shared values across components | | ✅ |
+
+## The key architectural difference
+
+Both libraries aim to keep animations off the main JS thread, but they achieve this in fundamentally different ways.
+
+**react-native-ease** has zero JS involvement during animation. Once the native side receives the new target values, the animation runs entirely inside the platform — no JS callbacks, no prop updates, no re-renders. On iOS, Core Animation runs in a separate **render server process** (not even on the main thread). On Android, `ObjectAnimator` and `SpringAnimation` run on the UI thread, but they are considerably lighter-weight than Reanimated worklets.
+
+**Reanimated** runs animation worklets on a separate JS thread (its own JS runtime). This gives it the flexibility to respond to shared value changes, run complex interpolation logic, and coordinate animations across components — but it still involves a runtime per frame.
+
+## Performance comparison
+
+The example app includes a benchmark measuring per-frame animation overhead when animating `translateX` on a configurable number of views simultaneously (linear, 2s loop).
+
+### Android
+
+UI thread time per frame: anim + layout + draw (ms). Lower is better.
+
+#### 10 views
+
+| Metric | Ease | Reanimated SV | Reanimated SV (FF) | Reanimated CSS | Reanimated CSS (FF) | RN Animated |
+| --- | --- | --- | --- | --- | --- | --- |
+| Avg | 0.21 | 1.15 | 0.75 | 0.99 | 0.45 | 0.36 |
+| P95 | 0.33 | 1.70 | 1.53 | 1.44 | 0.80 | 0.62 |
+| P99 | 0.48 | 1.94 | 2.26 | 1.62 | 1.35 | 0.98 |
+
+#### 100 views
+
+| Metric | Ease | Reanimated SV | Reanimated SV (FF) | Reanimated CSS | Reanimated CSS (FF) | RN Animated |
+| --- | --- | --- | --- | --- | --- | --- |
+| Avg | 0.36 | 2.71 | 1.81 | 2.19 | 1.01 | 0.71 |
+| P95 | 0.56 | 3.09 | 2.29 | 2.67 | 1.91 | 1.08 |
+| P99 | 0.71 | 3.20 | 2.63 | 2.97 | 2.25 | 1.36 |
+
+#### 500 views
+
+| Metric | Ease | Reanimated SV | Reanimated SV (FF) | Reanimated CSS | Reanimated CSS (FF) | RN Animated |
+| --- | --- | --- | --- | --- | --- | --- |
+| Avg | 0.60 | 8.31 | 5.37 | 5.50 | 2.37 | 1.60 |
+| P95 | 0.75 | 9.26 | 6.36 | 6.34 | 2.86 | 1.88 |
+| P99 | 0.87 | 9.59 | 6.89 | 6.88 | 3.22 | 3.84 |
+
+### iOS
+
+Display link callback time per frame (ms). Lower is better.
+
+#### 10 views
+
+| Metric | Ease | Reanimated SV | Reanimated SV (FF) | Reanimated CSS | Reanimated CSS (FF) | RN Animated |
+| --- | --- | --- | --- | --- | --- | --- |
+| Avg | 0.01 | 1.33 | 1.08 | 1.06 | 0.63 | 0.83 |
+| P95 | 0.02 | 1.67 | 1.59 | 1.34 | 1.01 | 1.18 |
+| P99 | 0.03 | 1.90 | 1.68 | 1.50 | 1.08 | 1.31 |
+
+#### 100 views
+
+| Metric | Ease | Reanimated SV | Reanimated SV (FF) | Reanimated CSS | Reanimated CSS (FF) | RN Animated |
+| --- | --- | --- | --- | --- | --- | --- |
+| Avg | 0.01 | 3.72 | 3.33 | 2.71 | 2.48 | 3.32 |
+| P95 | 0.01 | 5.21 | 4.50 | 3.83 | 3.39 | 4.28 |
+| P99 | 0.02 | 5.68 | 4.75 | 4.91 | 3.79 | 4.55 |
+
+#### 500 views
+
+| Metric | Ease | Reanimated SV | Reanimated SV (FF) | Reanimated CSS | Reanimated CSS (FF) | RN Animated |
+| --- | --- | --- | --- | --- | --- | --- |
+| Avg | 0.01 | 6.84 | 6.54 | 4.16 | 3.70 | 4.91 |
+| P95 | 0.01 | 7.69 | 7.32 | 4.59 | 4.22 | 5.66 |
+| P99 | 0.02 | 8.10 | 7.45 | 4.71 | 4.33 | 5.89 |
+
+### Why the numbers look this way
+
+**iOS near zero** — Core Animation runs animations inside a separate render server process called `backboardd`. The process that runs your app code has no involvement at all once the animation is committed. The ~0.01ms measured is essentially measurement noise.
+
+**Android lower than Reanimated** — `ObjectAnimator` and `SpringAnimation` are lightweight OS-level animators. They update view properties directly on the UI thread with minimal overhead. Reanimated worklets involve a separate JS runtime that still communicates with the UI thread per frame.
+
+## Non-goals of react-native-ease
+
+These animation patterns are outside the scope of this library by design:
+
+- **Complex gesture-driven animations** — pan, pinch, or velocity-based interactions require Reanimated and `react-native-gesture-handler`
+- **Layout animations** — animating `width`, `height`, or any property that triggers a layout pass is not supported
+- **Shared element transitions** — use Reanimated's shared element API or React Navigation's built-in transitions
+- **Old architecture** — Fabric (new architecture) only; the old bridge architecture is not supported
+
+## Can you use both in the same project?
+
+Yes. `react-native-ease` and `react-native-reanimated` are completely independent and coexist without conflict. A common pattern is to use Ease for simple state-driven animations (tooltips, modals, cards) and Reanimated for gesture-driven interactions in the same app.
+
+<Note>
+  Both libraries can be installed and used simultaneously in the same project. There are no peer dependency conflicts.
+</Note>

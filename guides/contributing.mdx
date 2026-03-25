@@ -1,0 +1,159 @@
+---
+title: "Contributing"
+description: "Set up the react-native-ease development environment, understand the project structure, and follow the workflow for submitting changes."
+---
+
+Contributions are welcome, no matter how large or small. Please read the [code of conduct](https://github.com/AppAndFlow/react-native-ease/blob/main/CODE_OF_CONDUCT.md) before contributing.
+
+## Prerequisites
+
+- **Node.js** — check the [`.nvmrc`](https://github.com/AppAndFlow/react-native-ease/blob/main/.nvmrc) file for the required version
+- **Yarn** — the project uses Yarn workspaces and cannot be set up with `npm`
+
+## Project structure
+
+The repository is a monorepo with two packages:
+
+```
+react-native-ease/
+├── src/                          # Library source (TypeScript)
+│   ├── EaseView.tsx              # React component — flattens props to native
+│   ├── EaseViewNativeComponent.ts# Codegen spec — defines native props/events
+│   ├── types.ts                  # Public TypeScript types
+│   ├── index.tsx                 # Public exports
+│   └── __tests__/               # Jest tests
+├── ios/                          # iOS native implementation (ObjC++)
+├── android/                      # Android native implementation (Kotlin)
+└── example/                      # Demo app (separate Yarn workspace)
+    └── src/
+        ├── App.tsx               # Main demo screen
+        └── ComparisonScreen.tsx  # Side-by-side comparison with Reanimated
+```
+
+## Setup
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/AppAndFlow/react-native-ease.git
+    cd react-native-ease
+    ```
+  </Step>
+  <Step title="Install dependencies">
+    Run `yarn` from the root. This installs dependencies for both the library and the example app via Yarn workspaces.
+
+    ```bash
+    yarn
+    ```
+  </Step>
+  <Step title="Run the example app">
+    The example app is configured to use the local library source. Any changes to the TypeScript source are reflected immediately without a rebuild. Native code changes require rebuilding.
+
+    ```bash
+    yarn example start       # Start Metro bundler
+    yarn example ios         # Build and run on iOS
+    yarn example android     # Build and run on Android
+    ```
+  </Step>
+</Steps>
+
+## Development workflow
+
+### Available commands
+
+| Command | Description |
+| --- | --- |
+| `yarn example start` | Start Metro bundler for the example app |
+| `yarn example ios` | Build and run the example app on iOS |
+| `yarn example android` | Build and run the example app on Android |
+| `yarn test` | Run Jest tests |
+| `yarn lint` | Run ESLint and TypeScript type check |
+| `yarn format:write` | Auto-fix Prettier and clang-format issues |
+| `yarn typecheck` | TypeScript type check only |
+
+### Pre-commit checklist
+
+Before committing, run the full check sequence:
+
+```bash
+yarn format:write && yarn lint && yarn test
+```
+
+Run `yarn format:write` **before** `yarn lint` — this auto-fixes formatting issues that would otherwise show up as lint errors.
+
+<Note>
+  Lefthook pre-commit hooks run ESLint and TypeScript checks automatically on every commit. All failures must be fixed before the commit is accepted. If hooks aren't running, install Lefthook: `yarn lefthook install`.
+</Note>
+
+### Editing native code
+
+- **iOS** — Open `example/ios/EaseExample.xcworkspace` in Xcode. Find the library source under `Pods > Development Pods > react-native-ease`.
+- **Android** — Open `example/android` in Android Studio. Find the library source under `react-native-ease` in the Android panel.
+
+Confirm the example app is running with Fabric enabled by checking the Metro log:
+
+```
+Running "EaseExample" with {"fabric":true,"initialProps":{"concurrentRoot":true},"rootTag":1}
+```
+
+## Adding a new animatable property
+
+Follow these steps when adding a new property to `AnimateProps`:
+
+<Steps>
+  <Step title="Add to types">
+    Add the property to `AnimateProps` in `src/types.ts`:
+
+    ```ts
+    export type AnimateProps = {
+      // existing properties...
+      myNewProp?: number;
+    };
+    ```
+  </Step>
+  <Step title="Add codegen props">
+    Add `animateMyNewProp` and `initialAnimateMyNewProp` to `src/EaseViewNativeComponent.ts`. This is the codegen spec — the native side reads these flat props.
+  </Step>
+  <Step title="Add identity default">
+    Add the identity (neutral) value to `IDENTITY` in `src/EaseView.tsx` and pass both flat props to `NativeEaseView`.
+  </Step>
+  <Step title="Implement on iOS">
+    In `ios/EaseView.mm`, handle the new property in `updateProps:` — diff the old vs new value, read the current presentation layer value for smooth interruption, and create a `CABasicAnimation` or `CASpringAnimation`.
+  </Step>
+  <Step title="Implement on Android">
+    In `android/.../EaseViewManager.kt`, add a `@ReactProp` setter. In `EaseView.kt`, add a `pending` field and handle it in `applyAnimateValues()` using `ObjectAnimator` or `SpringAnimation`.
+  </Step>
+  <Step title="Handle view recycling">
+    Reset the property to its identity value in `prepareForRecycle` (iOS) and `cleanup()` (Android). Fabric recycles native views — any property not reset will leak stale values to the next component that uses the view.
+  </Step>
+  <Step title="Add tests and documentation">
+    - Add Jest tests in `src/__tests__/`
+    - Add a demo in `example/src/App.tsx` or a new screen
+    - Update the `AnimateProps` table in the README
+  </Step>
+</Steps>
+
+## Commit style
+
+Use [conventional commits](https://www.conventionalcommits.org/):
+
+| Prefix | When to use |
+| --- | --- |
+| `feat:` | New animatable property, new feature |
+| `fix:` | Bug fix |
+| `chore:` | Tooling, dependencies, build changes |
+| `docs:` | Documentation changes only |
+| `test:` | Adding or updating tests |
+| `refactor:` | Code change with no behavior change |
+
+## Pull request guidelines
+
+- Keep PRs focused on a single change
+- Verify that linters and tests pass before opening
+- For changes to the API or native implementation, open an issue first to discuss with maintainers
+- Follow the pull request template when opening the PR
+- Review any documentation that needs updating alongside your code change
+
+<Tip>
+  Working on your first open source contribution? The [How to Contribute to an Open Source Project on GitHub](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github) series is a free, practical introduction.
+</Tip>

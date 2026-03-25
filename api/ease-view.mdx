@@ -1,0 +1,199 @@
+---
+title: 'EaseView'
+description: 'A View that animates property changes using native platform APIs'
+---
+
+`EaseView` is a native Fabric component that brings declarative, CSS-transition-style animations to React Native using Core Animation on iOS and ObjectAnimator/SpringAnimation on Android. Animations run entirely off the JS thread — no worklets, no shared values, no JS animation loop.
+
+It works like a standard `View` — accepts children, styles, and all `ViewProps`. When values in `animate` change, the view smoothly transitions to the new values using native platform APIs.
+
+```tsx
+import { EaseView } from 'react-native-ease';
+```
+
+<Note>
+  `EaseView` requires React Native 0.76+ (Fabric / new architecture). It does not support the old architecture.
+</Note>
+
+## Usage
+
+```tsx
+import { EaseView } from 'react-native-ease';
+
+function AnimatedCard({ visible, children }) {
+  return (
+    <EaseView
+      initialAnimate={{ opacity: 0, translateY: 20 }}
+      animate={{ opacity: visible ? 1 : 0, translateY: visible ? 0 : 20 }}
+      transition={{ type: 'spring', damping: 15, stiffness: 120 }}
+      transformOrigin={{ x: 0.5, y: 0.5 }}
+      onTransitionEnd={({ finished }) => {
+        console.log('Animation finished:', finished);
+      }}
+      style={{ backgroundColor: 'white', borderRadius: 12, padding: 16 }}
+    >
+      {children}
+    </EaseView>
+  );
+}
+```
+
+## Props
+
+<ParamField path="animate" type="AnimateProps">
+  Target values for animated properties. When these values change, the view animates from its current state to the new values. See [AnimateProps](/api/animate-props) for the full list of animatable properties.
+
+  ```tsx
+  <EaseView animate={{ opacity: 1, translateY: 0, scale: 1 }} />
+  ```
+</ParamField>
+
+<ParamField path="initialAnimate" type="AnimateProps">
+  Starting values for enter animations. On mount, the view starts at these values and animates to `animate`. Without `initialAnimate`, the view renders at the `animate` values immediately with no mount animation.
+
+  ```tsx
+  // Fade in and slide up on mount
+  <EaseView
+    initialAnimate={{ opacity: 0, translateY: 20 }}
+    animate={{ opacity: 1, translateY: 0 }}
+  />
+  ```
+
+  <Note>
+    `initialAnimate` is also required when using `loop` on a timing transition — it defines the start value the loop returns to.
+  </Note>
+</ParamField>
+
+<ParamField path="transition" type="Transition">
+  Animation configuration. Controls whether the animation uses a fixed-duration timing curve, a physics-based spring, or no animation at all. Can be a single config applied to all properties, or a per-property map.
+
+  Defaults to `{ type: 'timing', duration: 300, easing: 'easeInOut' }` when omitted.
+
+  See [Transition](/api/transition) for all configuration options.
+
+  ```tsx
+  // Timing
+  <EaseView transition={{ type: 'timing', duration: 400, easing: 'easeOut' }} />
+
+  // Spring
+  <EaseView transition={{ type: 'spring', damping: 15, stiffness: 120 }} />
+
+  // Per-property map
+  <EaseView
+    transition={{
+      opacity: { type: 'timing', duration: 150, easing: 'easeOut' },
+      transform: { type: 'spring', damping: 12, stiffness: 200 },
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="onTransitionEnd" type="(event: TransitionEndEvent) => void">
+  Called when all running animations complete. Receives a `TransitionEndEvent` object.
+
+  <Expandable title="TransitionEndEvent properties">
+    <ResponseField name="finished" type="boolean">
+      `true` if the animation completed naturally. `false` if it was interrupted by a new animation starting before the previous one finished.
+    </ResponseField>
+  </Expandable>
+
+  ```tsx
+  <EaseView
+    animate={{ opacity: visible ? 1 : 0 }}
+    onTransitionEnd={({ finished }) => {
+      if (finished) {
+        console.log('Animation completed naturally');
+      } else {
+        console.log('Animation was interrupted');
+      }
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="transformOrigin" type="TransformOrigin">
+  Pivot point for scale and rotation animations, expressed as 0–1 fractions of the view's dimensions. Defaults to `{ x: 0.5, y: 0.5 }` (center).
+
+  <Expandable title="TransformOrigin properties">
+    <ResponseField name="x" type="number">
+      Horizontal origin. `0` = left edge, `0.5` = center, `1` = right edge. Defaults to `0.5`.
+    </ResponseField>
+    <ResponseField name="y" type="number">
+      Vertical origin. `0` = top edge, `0.5` = center, `1` = bottom edge. Defaults to `0.5`.
+    </ResponseField>
+  </Expandable>
+
+  ```tsx
+  // Rotate from the top-left corner
+  <EaseView
+    animate={{ rotate: isOpen ? 45 : 0 }}
+    transformOrigin={{ x: 0, y: 0 }}
+  />
+
+  // Scale from the bottom-right
+  <EaseView
+    animate={{ scale: active ? 1.2 : 1 }}
+    transformOrigin={{ x: 1, y: 1 }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="useHardwareLayer" type="boolean" default="false">
+  **Android only.** When `true`, rasterizes the view to a GPU texture for the duration of the animation. Animated property changes (opacity, scale, rotation) are then composited on the RenderThread without redrawing the view hierarchy.
+
+  This is a no-op on iOS, where Core Animation already composites off the main thread.
+
+  <Warning>
+    Views with `useHardwareLayer` clip children that overflow their layout bounds. Avoid using this with `translateX`/`translateY` animations on views with overflowing content, as it will cause visual artifacts.
+  </Warning>
+
+  ```tsx
+  <EaseView
+    animate={{ opacity: isVisible ? 1 : 0, scale: isVisible ? 1 : 0.9 }}
+    useHardwareLayer
+  />
+  ```
+</ParamField>
+
+<ParamField path="style" type="ViewStyle">
+  Non-animated styles — layout, colors, borders, shadows, and any other `ViewStyle` properties.
+
+  If a property appears in both `style` and `animate`, the animated value takes priority and the style value is stripped. A dev warning is logged when this happens.
+
+  ```tsx
+  <EaseView
+    animate={{ translateY: moved ? -10 : 0 }}
+    style={{
+      backgroundColor: 'white',
+      borderRadius: 12,
+      padding: 16,
+      shadowColor: '#000',
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="className" type="string">
+  NativeWind / Tailwind CSS class string. Requires [NativeWind](https://www.nativewind.dev/) to be installed and configured in your project.
+
+  ```tsx
+  <EaseView
+    animate={{ opacity: visible ? 1 : 0 }}
+    className="bg-white rounded-xl p-4"
+  />
+  ```
+</ParamField>
+
+<ParamField path="children" type="ReactNode">
+  Child elements rendered inside the animated view.
+</ParamField>
+
+<ParamField path="...rest" type="ViewProps">
+  All other standard React Native `View` props are forwarded to the underlying view (`accessible`, `testID`, `pointerEvents`, etc.).
+</ParamField>
+
+## Related
+
+- [AnimateProps](/api/animate-props) — all animatable properties
+- [Transition](/api/transition) — timing, spring, and none configuration
+- [Types](/api/types) — full TypeScript type reference

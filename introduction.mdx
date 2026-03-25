@@ -1,0 +1,82 @@
+---
+title: "Introduction"
+description: "Lightweight declarative animations powered by platform APIs. Zero JS overhead — animations run natively on iOS and Android."
+---
+
+`react-native-ease` is a React Native animation library built around a single component: `EaseView`. Drop it in wherever you'd use a `View`, add an `animate` prop with target values, and the library takes care of the rest — using the platform's own animation APIs under the hood.
+
+## Philosophy
+
+Three principles guide the design:
+
+**Native platform APIs, not a JS animation loop.** Every animation runs entirely on native code. There is no JS thread involvement after the prop change — no `requestAnimationFrame`, no worklets, no shared values.
+
+**Zero overhead architecture.** The JS layer does one thing: flattens your structured props into flat native props that Fabric can diff. From that point, all animation logic runs natively. No C++ runtime, no custom animation engine.
+
+**Simple, CSS-transition-like API.** Set target values in `animate`, optionally describe the animation in `transition`, and you're done. One component, a few props, smooth motion.
+
+## Architecture
+
+`EaseView` is a Fabric native component. The JS side resolves your `animate`, `initialAnimate`, and `transition` props into flat native props — for example:
+
+```
+animate={{ opacity: 0.5, scale: 1.2 }}
+transition={{ type: 'spring', damping: 10 }}
+
+→  animateOpacity=0.5
+   animateScaleX=1.2, animateScaleY=1.2
+   transitions={ defaultConfig: { type: 'spring', damping: 10, ... } }
+```
+
+When those flat props change, the native view:
+
+1. **Diffs** previous vs new values to find what changed
+2. **Reads** the current in-flight value (for smooth interruption)
+3. **Creates** a platform-native animation from the current value to the new target
+4. **Sets** the final value immediately on the model layer
+
+### iOS
+
+On iOS, animations use `CABasicAnimation` and `CASpringAnimation` on `CALayer` key paths (`transform.scale.x`, `transform.translation.x`, `opacity`, etc.). Core Animation runs on a dedicated render server process separate from both the JS thread and the UI thread — which is why Ease shows near-zero JS overhead on iOS.
+
+### Android
+
+On Android, animations use `ObjectAnimator` (timing) and `SpringAnimation` from the AndroidX `DynamicAnimation` library on `View` properties. These run on the UI thread but are significantly lighter than approaches that drive animation through the JS thread.
+
+## When to use Ease vs Reanimated
+
+Ease is purpose-built for declarative, state-driven animations — the kind you describe with target values and let the platform execute. It is not a replacement for Reanimated in every scenario.
+
+| Use case | Ease | Reanimated |
+|---|---|---|
+| Fade / slide / scale on state change | ✅ | |
+| Enter / exit animations | ✅ | |
+| Looping animations | ✅ | |
+| Gesture-driven animations (pan, pinch) | | ✅ |
+| Layout animations (width, height) | | ✅ |
+| Complex interpolations and chaining | | ✅ |
+| Shared element transitions | | ✅ |
+
+For a detailed comparison, see [vs Reanimated](/guides/vs-reanimated).
+
+## Requirements
+
+<Note>
+  `react-native-ease` requires the **new architecture (Fabric)**. It does not support the old architecture. Ensure your project has Fabric enabled before installing.
+</Note>
+
+| Requirement | Minimum version |
+|---|---|
+| React Native | 0.76+ |
+| iOS | 15.1+ |
+| Android minSdk | 24+ |
+| Architecture | Fabric (new architecture) only |
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Build your first animation in under five minutes
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/ease-view">
+    Full reference for EaseView props and types
+  </Card>
+</CardGroup>

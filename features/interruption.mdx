@@ -1,0 +1,56 @@
+---
+title: "Animation Interruption"
+description: "Animations are interruptible by default — changing values mid-animation smoothly redirects to the new target."
+---
+
+Animations in `react-native-ease` are **interruptible by default**. If you change `animate` values while an animation is running, it smoothly redirects from the current in-flight position to the new target — no jumping, no restarting.
+
+## How It Works
+
+```tsx
+// Rapidly toggling this is fine — each toggle smoothly
+// redirects the animation from its current position
+<EaseView
+  animate={{ translateX: isLeft ? 0 : 200 }}
+  transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+/>
+```
+
+No special configuration is needed. Any update to `animate` mid-animation is automatically handled.
+
+## Technical Details
+
+When `animate` values change, the native side:
+
+1. **Diffs** previous vs new values to find what changed
+2. **Reads** the current in-flight value from the presentation layer
+3. **Creates** a new animation from the current value to the new target
+4. **Sets** the final value immediately on the model layer
+
+This ensures the view never teleports — the new animation always starts from wherever the view physically is at the moment of interruption.
+
+## onTransitionEnd Behavior
+
+When an animation is interrupted, `onTransitionEnd` fires with `{ finished: false }` for the interrupted animation. The new animation, if it completes without interruption, fires with `{ finished: true }`.
+
+```tsx
+<EaseView
+  animate={{ translateX: isLeft ? 0 : 200 }}
+  transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+  onTransitionEnd={({ finished }) => {
+    if (finished) {
+      console.log('Animation completed naturally');
+    } else {
+      console.log('Animation was interrupted');
+    }
+  }}
+/>
+```
+
+## Animation Batching
+
+Both platforms track animation batches with a generation ID. When new animations start, any pending callbacks from the previous batch are fired immediately as interrupted (`finished: false`) before the new batch begins. This means `onTransitionEnd` is always called — once per animation start, either as completed or interrupted.
+
+<Tip>
+  Spring animations are especially natural for interrupted motion because the physics model preserves momentum. When a spring is redirected mid-flight, the resulting motion feels continuous and organic rather than snapping to a new trajectory.
+</Tip>

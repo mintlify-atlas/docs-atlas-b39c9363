@@ -1,0 +1,226 @@
+---
+title: "Migrating from Reanimated / Animated"
+description: "How to migrate existing Reanimated and React Native Animated code to react-native-ease, including an automatic migration skill and manual before/after examples."
+---
+
+If your project already uses `react-native-reanimated` or the built-in `Animated` API, you can migrate compatible animations to `react-native-ease` for simpler code and lower overhead.
+
+## Automatic migration skill
+
+The fastest way to migrate is with the official Agent Skill. It scans your codebase, classifies which animations can be migrated, and applies changes automatically.
+
+<Info>
+  The migration skill is built on [Agent Skills](https://agentskills.io). It runs inside your AI coding agent (Claude Code, Cursor, etc.) and modifies your source files directly.
+</Info>
+
+<Steps>
+  <Step title="Install the skill">
+    ```bash
+    npx skills add appandflow/react-native-ease
+    ```
+  </Step>
+  <Step title="Invoke the skill in your agent">
+    Run the following slash command in Claude Code (or your configured agent):
+
+    ```
+    /react-native-ease-refactor
+    ```
+  </Step>
+  <Step title="Review the migration report">
+    The skill scans your project and classifies every animation it finds:
+
+    1. Scans your project for Reanimated and `Animated` API usage
+    2. Classifies which animations can be migrated (and which can't, with reasons)
+    3. Shows a migration report with before/after details for each component
+    4. Lets you select which components to migrate
+    5. Applies the changes, preserving all non-animation logic
+  </Step>
+  <Step title="Verify the changes">
+    Run your app on both platforms and confirm the animations behave as expected.
+  </Step>
+</Steps>
+
+## Manual migration examples
+
+For targeted changes or when migrating without the skill, use these patterns.
+
+### From React Native `Animated`
+
+<Tabs>
+  <Tab title="Before">
+    ```tsx
+    import { useRef, useEffect } from 'react';
+    import { Animated } from 'react-native';
+
+    function FadeCard({ visible, children }) {
+      const opacity = useRef(new Animated.Value(visible ? 1 : 0)).current;
+
+      useEffect(() => {
+        Animated.timing(opacity, {
+          toValue: visible ? 1 : 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      }, [visible]);
+
+      return (
+        <Animated.View style={[styles.card, { opacity }]}>
+          {children}
+        </Animated.View>
+      );
+    }
+    ```
+  </Tab>
+  <Tab title="After">
+    ```tsx
+    import { EaseView } from 'react-native-ease';
+
+    function FadeCard({ visible, children }) {
+      return (
+        <EaseView
+          animate={{ opacity: visible ? 1 : 0 }}
+          transition={{ type: 'timing', duration: 300 }}
+          style={styles.card}
+        >
+          {children}
+        </EaseView>
+      );
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### From Reanimated `useSharedValue` / `useAnimatedStyle`
+
+<Tabs>
+  <Tab title="Before">
+    ```tsx
+    import { useEffect } from 'react';
+    import Animated, {
+      useSharedValue,
+      useAnimatedStyle,
+      withSpring,
+    } from 'react-native-reanimated';
+
+    function SlideCard({ isOpen, children }) {
+      const translateX = useSharedValue(0);
+
+      useEffect(() => {
+        translateX.value = withSpring(isOpen ? 200 : 0, {
+          damping: 15,
+          stiffness: 120,
+          mass: 1,
+        });
+      }, [isOpen]);
+
+      const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: translateX.value }],
+      }));
+
+      return (
+        <Animated.View style={[styles.card, animatedStyle]}>
+          {children}
+        </Animated.View>
+      );
+    }
+    ```
+  </Tab>
+  <Tab title="After">
+    ```tsx
+    import { EaseView } from 'react-native-ease';
+
+    function SlideCard({ isOpen, children }) {
+      return (
+        <EaseView
+          animate={{ translateX: isOpen ? 200 : 0 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+          style={styles.card}
+        >
+          {children}
+        </EaseView>
+      );
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### From Reanimated enter animation
+
+<Tabs>
+  <Tab title="Before">
+    ```tsx
+    import Animated, {
+      useSharedValue,
+      useAnimatedStyle,
+      withTiming,
+      runOnJS,
+    } from 'react-native-reanimated';
+    import { useEffect } from 'react';
+
+    function FadeInCard({ children }) {
+      const opacity = useSharedValue(0);
+      const translateY = useSharedValue(20);
+
+      useEffect(() => {
+        opacity.value = withTiming(1, { duration: 300 });
+        translateY.value = withTiming(0, { duration: 300 });
+      }, []);
+
+      const animatedStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+        transform: [{ translateY: translateY.value }],
+      }));
+
+      return (
+        <Animated.View style={[styles.card, animatedStyle]}>
+          {children}
+        </Animated.View>
+      );
+    }
+    ```
+  </Tab>
+  <Tab title="After">
+    ```tsx
+    import { EaseView } from 'react-native-ease';
+
+    function FadeInCard({ children }) {
+      return (
+        <EaseView
+          initialAnimate={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+          style={styles.card}
+        >
+          {children}
+        </EaseView>
+      );
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## What cannot be migrated
+
+Not every animation is a candidate for migration. The skill will flag these automatically, but it's worth knowing the boundaries upfront.
+
+<Warning>
+  The following animation types cannot be migrated to react-native-ease and must remain on Reanimated or the Animated API:
+
+  - **Gesture-driven animations** — Pan responders, pinch/zoom, velocity-based interactions powered by `react-native-gesture-handler`
+  - **Layout animations** — Animating `width`, `height`, `flex`, or any property that triggers a layout recalculation pass
+  - **Shared element transitions** — Cross-screen element continuity (Reanimated shared elements, React Navigation transitions)
+  - **Complex interpolations** — Multi-step sequences with `withSequence`, `withDelay`, or derived animated values
+  - **Cross-component shared values** — Animations coordinated across multiple components via `useSharedValue`
+</Warning>
+
+## Installing react-native-ease
+
+If you haven't installed the library yet, add it before running the migration:
+
+```bash
+npm install react-native-ease
+# or
+yarn add react-native-ease
+```
+
+React Native 0.76+ with the new architecture (Fabric) is required. See [Installation](/installation) for full setup instructions.

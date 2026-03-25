@@ -1,0 +1,96 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "react-native-ease",
+  "projectDescription": "A lightweight React Native library that provides declarative, native-powered animations via a single EaseView component, using Core Animation on iOS and ObjectAnimator/SpringAnimation on Android with zero JS overhead.",
+  "theme": "luma",
+  "primaryColor": "#848c8e",
+  "lightColor": "#11161e",
+  "darkColor": "#cfd0d2",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "installation", "quickstart"]
+          },
+          {
+            "group": "Animations",
+            "pages": [
+              "animations/timing",
+              "animations/spring",
+              "animations/enter-exit",
+              "animations/looping",
+              "animations/per-property"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/animatable-properties",
+              "features/transform-origin",
+              "features/interruption",
+              "features/hardware-layers"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/vs-reanimated",
+              "guides/migration",
+              "guides/performance",
+              "guides/contributing"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Components",
+            "pages": ["api/ease-view"]
+          },
+          {
+            "group": "Types",
+            "pages": [
+              "api/animate-props",
+              "api/transition",
+              "api/types"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Zero JS thread overhead — animations run entirely on native platform APIs (Core Animation on iOS, ObjectAnimator/SpringAnimation on Android)",
+    "Declarative CSS-transition-like API with a single EaseView component",
+    "Timing animations with preset and custom cubic bezier easing curves",
+    "Physics-based spring animations with damping, stiffness, and mass control",
+    "Per-property transition maps for mixed animation configs on a single view",
+    "Enter animations via initialAnimate prop for mount-time transitions",
+    "Looping animations with repeat and reverse modes",
+    "Smooth animation interruption — redirects mid-animation without jumps",
+    "Hardware-accelerated borderRadius and backgroundColor animations",
+    "Configurable transform origin for scale and rotation pivot control",
+    "Android hardware layer support for GPU texture compositing",
+    "Fabric (new architecture) only — no old architecture support"
+  ],
+  "publicApiSurface": [
+    "EaseView",
+    "EaseViewProps",
+    "AnimateProps",
+    "Transition",
+    "SingleTransition",
+    "TransitionMap",
+    "TimingTransition",
+    "SpringTransition",
+    "NoneTransition",
+    "EasingType",
+    "CubicBezier",
+    "TransitionEndEvent",
+    "TransformOrigin"
+  ]
+}

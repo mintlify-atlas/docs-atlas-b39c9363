@@ -1,0 +1,140 @@
+---
+title: "Performance"
+description: "How react-native-ease achieves zero JS overhead during animations, benchmark data comparing Ease to Reanimated and RN Animated, and tips for maximum performance."
+---
+
+## Why it's fast
+
+`react-native-ease` runs animations entirely on platform APIs. Once the JS layer sends new target values to the native view, there is no further JS involvement — no animation loop, no per-frame prop updates, no re-renders.
+
+<Tabs>
+  <Tab title="iOS">
+    On iOS, `react-native-ease` uses `CABasicAnimation` and `CASpringAnimation` on `CALayer` key paths. Core Animation is processed by a separate OS service called the **render server** (`backboardd`). Animations run in that process — not on the main thread, and not in your app process at all. This is why iOS benchmarks show ~0.01ms: there is essentially nothing to measure from the app's perspective.
+  </Tab>
+  <Tab title="Android">
+    On Android, `react-native-ease` uses `ObjectAnimator` and `SpringAnimation` from the Android Animator framework. These run on the UI thread, but they are significantly lighter-weight than Reanimated worklets because there is no JS runtime involved — just direct property updates on native `View` objects.
+  </Tab>
+</Tabs>
+
+## What "zero JS overhead" means
+
+During a running animation, the JS thread does nothing. Specifically:
+
+- No animation loop ticking on JS
+- No `Animated.Value` listeners firing
+- No `useAnimatedStyle` worklet evaluating per frame
+- No prop updates being dispatched from JS to native
+- No React re-renders
+
+This means your JS thread remains fully available for user interaction, navigation, data fetching, and other work while animations play.
+
+## Benchmark data
+
+The example app includes a benchmark that measures per-frame overhead when animating `translateX` in a loop on a configurable number of views (linear, 2s duration). All approaches animate the same property with the same timing.
+
+Reanimated results are shown both with experimental [feature flags](https://docs.swmansion.com/react-native-reanimated/docs/guides/feature-flags/) off (default) and on (FF).
+
+### Android
+
+UI thread time per frame: anim + layout + draw (ms). Lower is better. Release build, emulator, M4 MacBook Pro.
+
+| Views | Metric | Ease | Reanimated SV | Reanimated SV (FF) | Reanimated CSS | Reanimated CSS (FF) | RN Animated |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 10 | Avg | **0.21** | 1.15 | 0.75 | 0.99 | 0.45 | 0.36 |
+| 10 | P95 | **0.33** | 1.70 | 1.53 | 1.44 | 0.80 | 0.62 |
+| 10 | P99 | **0.48** | 1.94 | 2.26 | 1.62 | 1.35 | 0.98 |
+| 100 | Avg | **0.36** | 2.71 | 1.81 | 2.19 | 1.01 | 0.71 |
+| 100 | P95 | **0.56** | 3.09 | 2.29 | 2.67 | 1.91 | 1.08 |
+| 100 | P99 | **0.71** | 3.20 | 2.63 | 2.97 | 2.25 | 1.36 |
+| 500 | Avg | **0.60** | 8.31 | 5.37 | 5.50 | 2.37 | 1.60 |
+| 500 | P95 | **0.75** | 9.26 | 6.36 | 6.34 | 2.86 | 1.88 |
+| 500 | P99 | **0.87** | 9.59 | 6.89 | 6.88 | 3.22 | 3.84 |
+
+### iOS
+
+Display link callback time per frame (ms). Lower is better. Release build, simulator, iPhone 16 Pro, M4 MacBook Pro.
+
+| Views | Metric | Ease | Reanimated SV | Reanimated SV (FF) | Reanimated CSS | Reanimated CSS (FF) | RN Animated |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 10 | Avg | **0.01** | 1.33 | 1.08 | 1.06 | 0.63 | 0.83 |
+| 10 | P95 | **0.02** | 1.67 | 1.59 | 1.34 | 1.01 | 1.18 |
+| 10 | P99 | **0.03** | 1.90 | 1.68 | 1.50 | 1.08 | 1.31 |
+| 100 | Avg | **0.01** | 3.72 | 3.33 | 2.71 | 2.48 | 3.32 |
+| 100 | P95 | **0.01** | 5.21 | 4.50 | 3.83 | 3.39 | 4.28 |
+| 100 | P99 | **0.02** | 5.68 | 4.75 | 4.91 | 3.79 | 4.55 |
+| 500 | Avg | **0.01** | 6.84 | 6.54 | 4.16 | 3.70 | 4.91 |
+| 500 | P95 | **0.01** | 7.69 | 7.32 | 4.59 | 4.22 | 5.66 |
+| 500 | P99 | **0.02** | 8.10 | 7.45 | 4.71 | 4.33 | 5.89 |
+
+<Tip>
+  Run the benchmark yourself in the [example app](https://github.com/AppAndFlow/react-native-ease/tree/main/example). Use a release build for accurate numbers — debug builds include extra overhead that skews results.
+</Tip>
+
+## Hardware layers (Android)
+
+For complex view hierarchies animating opacity, scale, or rotation, enable `useHardwareLayer` to rasterize the view into a GPU texture. Animated property changes are then composited on the RenderThread without redrawing child views.
+
+```tsx
+<EaseView
+  animate={{ opacity: isVisible ? 1 : 0 }}
+  useHardwareLayer
+  style={styles.complexCard}
+>
+  {/* many children */}
+</EaseView>
+```
+
+See [Hardware Layers](/features/hardware-layers) for trade-offs, including GPU memory usage and clipping behavior.
+
+`useHardwareLayer` is a no-op on iOS, where Core Animation already composites off the main thread.
+
+## View recycling
+
+Fabric recycles native views when components are unmounted and remounted. `react-native-ease` handles this correctly on both platforms:
+
+- **iOS** — `prepareForRecycle` resets all animated properties (opacity, translation, scale, rotation, border radius) to their identity values before a view is reused
+- **Android** — `cleanup()` performs the same reset
+
+This ensures no stale animation state leaks from one component instance to the next.
+
+## Tips for maximum performance
+
+<AccordionGroup>
+  <Accordion title="Use spring for interruptible animations">
+    Spring animations preserve momentum when interrupted. If a user taps rapidly or reverses mid-animation, a spring will redirect smoothly from its current velocity rather than snapping. Use timing only when a precise duration matters (e.g., syncing with audio).
+
+    ```tsx
+    <EaseView
+      animate={{ translateX: isOpen ? 200 : 0 }}
+      transition={{ type: 'spring', damping: 15, stiffness: 120, mass: 1 }}
+    />
+    ```
+  </Accordion>
+  <Accordion title="Use useHardwareLayer for opacity/scale/rotation on complex views">
+    When animating opacity, scale, or rotation on a view with many children, `useHardwareLayer` moves compositing to the RenderThread. This is most impactful on Android when the view hierarchy is deep.
+
+    ```tsx
+    <EaseView
+      animate={{ scale: isActive ? 1.05 : 1 }}
+      useHardwareLayer
+    />
+    ```
+  </Accordion>
+  <Accordion title="Avoid animating width and height">
+    Animating `width` or `height` requires a layout recalculation pass on every frame. This is outside the scope of `react-native-ease` by design — these properties are not supported in `animate`. If you need layout animations, use Reanimated's layout animation API.
+  </Accordion>
+  <Accordion title="Stagger with delay, not setTimeout">
+    Use the `delay` parameter on `transition` to stagger entrance animations. This keeps all animations on the native side rather than scheduling JS timers.
+
+    ```tsx
+    {items.map((item, i) => (
+      <EaseView
+        key={item.id}
+        initialAnimate={{ opacity: 0, translateY: 20 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 300, delay: i * 80 }}
+      />
+    ))}
+    ```
+  </Accordion>
+</AccordionGroup>

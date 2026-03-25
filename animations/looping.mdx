@@ -1,0 +1,50 @@
+---
+title: "Looping Animations"
+description: "Run timing animations indefinitely using repeat or reverse loop modes."
+---
+
+Timing animations can loop indefinitely. Set the `loop` option on a timing transition to one of two modes:
+
+- `'repeat'` — restarts the animation from the beginning each cycle
+- `'reverse'` — alternates direction, animating forward then backward
+
+<Warning>
+  Spring animations do not support looping. `loop` is only available on `type: 'timing'` transitions.
+</Warning>
+
+<Note>
+  `initialAnimate` is required for looping. It defines the starting value the animation resets to (for `'repeat'`) or reverses from (for `'reverse'`). Without it, the loop has no defined start point.
+</Note>
+
+## Examples
+
+### Pulsing opacity
+
+Uses `loop: 'reverse'` to fade between `0.3` and `1` continuously.
+
+```tsx
+<EaseView
+  initialAnimate={{ opacity: 0.3 }}
+  animate={{ opacity: 1 }}
+  transition={{ type: 'timing', duration: 1000, easing: 'easeInOut', loop: 'reverse' }}
+/>
+```
+
+### Marquee-style scroll
+
+Uses `loop: 'repeat'` to scroll content from its starting position to `-300` pixels, then jump back and repeat.
+
+```tsx
+<EaseView
+  initialAnimate={{ translateX: 0 }}
+  animate={{ translateX: -300 }}
+  transition={{ type: 'timing', duration: 3000, easing: 'linear', loop: 'repeat' }}
+/>
+```
+
+## Loop modes compared
+
+| Mode        | Behavior                                                  | Common use cases              |
+| ----------- | --------------------------------------------------------- | ----------------------------- |
+| `'repeat'`  | Jumps back to `initialAnimate` value and plays again      | Marquee scroll, progress indicators |
+| `'reverse'` | Plays forward to `animate`, then backward to `initialAnimate`, and repeats | Pulse, breathe, shimmer |
